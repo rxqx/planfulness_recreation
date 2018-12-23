@@ -1,0 +1,51 @@
+---
+title: "Qualitative analyses"
+author: "Rita M Ludwig"
+date: "12/23/2018"
+output: html_document
+---
+A R script that runs all analyses associated with the hypotheses regarding the participants' qualitative 'personal projects' data (see manuscript and pre-registration).
+```{r setup, include=FALSE}
+##Required packages to run the script
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(GGally)) install.packages("GGally")
+if(!require(psych)) install.packages("psych")
+if(!require(lavaan)) install.packages("lavaan")
+if(!require(semPlot)) install.packages("semPlot")
+
+##Import data
+data=read.csv("~/scores_and_ratings_clean_planfulnessREC.csv")
+## Subset the data to select only cases from the winter term (post-goal setting), and remove individuals who did not write goals.
+data$term=as.character(data$term)
+finaldata=filter(data,!str_detect(term,"fall")) %>%
+  subset(., select = -c(term,r1.descriptiveness,r1.planfulness,r2.descriptiveness,r2.planfulness,r3.descriptiveness,r3.planfulness, subID)) 
+finaldata = filter(finaldata, descriptiveness.average != 0)
+finaldata = filter(finaldata, planfulness.average != 0)
+```
+Calculate the average rating of descriptiveness and planfulness for each participant's written goal, by all 3 raters.
+
+```{r Correlations}
+corr.test(finaldata)
+ggpairs(data=finaldata, diag=list(continuous="density"), columns=8:11, axisLabels="show")
+```
+Now, run a LGCM to test the descriptiveness & persistence hypothesis.
+```{r piecewise LGCM}
+activity=read.csv("~/cleandata_planfulnessREC.csv") 
+activitydata=inner_join(data, activity, by = "subID") %>%
+  unique(.)
+
+LGCM = '
+  # intercept and slope with fixed coefficients
+    i =~ 1*Week1_count + 1*Week2_count + 1*Week3_count + 1*Week4_count + 1*Week5_count + 1*Week6_count + 1*Week7_count + 1*Week8_count + 1*Week9_count + 1*Week10_count + 1*Week11_count + 1*Week12_count + 1*Week13_count + 1*Week14_count + 1*Week15_count + 1*Week16_count + 1*Week17_count + 1*Week18_count + 1*Week19_count + 1*Week20_count
+  wi =~ 0*Week1_count + 0*Week2_count + 0*Week3_count + 0*Week4_count + 0*Week5_count + 0*Week6_count + 0*Week7_count + 0*Week8_count + 0*Week9_count + 0*Week10_count + 1*Week11_count + 1*Week12_count + 1*Week13_count + 1*Week14_count + 1*Week15_count + 1*Week16_count + 1*Week17_count + 1*Week18_count + 1*Week19_count + 1*Week20_count
+    s =~ 0*Week1_count + 0*Week2_count + 0*Week3_count + 0*Week4_count + 0*Week5_count + 0*Week6_count + 0*Week7_count + 0*Week8_count +0*Week9_count + 0*Week10_count + 0*Week11_count + 1*Week12_count + 2*Week13_count + 3*Week14_count + 4*Week15_count + 5*Week16_count + 6*Week17_count + 7*Week18_count + 8*Week19_count + 9*Week20_count
+  descriptiveness =~ r1.descriptiveness + r2.descriptiveness + r3.descriptiveness
+# covariance
+  s ~~ descriptiveness
+'
+LGCM.fit = growth(LGCM, data = activitydata)
+summary(LGCM.fit, standardized=TRUE)
+
+semPaths(LGCM.fit, style="LISREL")
+```
