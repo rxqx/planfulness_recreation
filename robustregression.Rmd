@@ -1,0 +1,41 @@
+---
+title: "Robust_Regression"
+author: "Rita M Ludwig"
+date: "12/23/2018"
+output: html_document
+---
+A R script that runs a robust regression, regressing scores on the Planfulness Scale on count of check-ins to the recreation center to test whether Planfulness moderates individual slopes of goal persistence over time.
+```{r setup, include=FALSE}
+##Required packages to run the script
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(MASS)) install.packages("MASS")
+
+##Import data
+data=read.csv("~/Documents/Research/Planfulness_REC/Data/scales_and_count_clean_planfulnessREC.csv")
+```
+Run robust regression- iterative re-weighting least squares with Huber weights. Predict count of check-ins in winter term by Planfulness score.
+
+```{r P predict Count}
+fallactivity=filter(data,!str_detect(term,"winter")) %>%
+  subset(., select= -c(term))
+
+predictfall=rlm(fallactivity$Count ~ fallactivity$Planfulness_score)
+summary(predictfall)
+
+winteractivity=filter(data,!str_detect(term,"fall")) %>%
+  subset(., select= -c(term))
+
+predictwinter=MASS::rlm(winteractivity$Count ~ winteractivity$Planfulness_score)
+summary(predictwinter)
+```
+Plot.
+```{r plotting}
+ggplot(data, aes(x=Planfulness_score, y=Count, color=term)) +
+    xlab("Planfulness score") + ylab("Recreation center swipe-in count") +
+    geom_point(aes(shape=term)) +
+    scale_shape_manual(values=c(8, 19)) +
+    scale_colour_grey() + theme_bw() + 
+    geom_smooth(method=loess,   # Add loess lines
+                se=FALSE)
+```
