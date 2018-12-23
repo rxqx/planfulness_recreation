@@ -1,0 +1,37 @@
+---
+title: "LGCM"
+author: "Rita M Ludwig"
+date: "12/23/2018"
+output: html_document
+---
+A R script that builds and runs a piecewise latent growth curve model to test whether scores on the Planfulness Scale moderate check-in activity over time.
+```{r setup, include=FALSE}
+##Required packages to run the script
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(lavaan)) install.packages("lavaan")
+if(!require(semPlot)) install.packages("semPlot")
+
+##Import data
+data=read.csv("~/cleandata_planfulnessREC.csv")
+```
+Run a piecewise latent growth curve model, where REC center swipe-in counts are measured at twenty timepoints (each week of the fall and winter terms). Planfulness score (and other scale scores) is included as a variable that influences the latent growth factors.
+```{r LGCM}
+## First, center Planfulness for interpretability
+data$Planfulnesscenter=scale(data$Planfulness_score, center=TRUE, scale = FALSE)
+
+LGCM = '
+  # intercept and slope with fixed coefficients
+    i =~ 1*Week1_count + 1*Week2_count + 1*Week3_count + 1*Week4_count + 1*Week5_count + 1*Week6_count + 1*Week7_count + 1*Week8_count + 1*Week9_count + 1*Week10_count + 1*Week11_count + 1*Week12_count + 1*Week13_count + 1*Week14_count + 1*Week15_count + 1*Week16_count + 1*Week17_count + 1*Week18_count + 1*Week19_count + 1*Week20_count
+  wi =~ 0*Week1_count + 0*Week2_count + 0*Week3_count + 0*Week4_count + 0*Week5_count + 0*Week6_count + 0*Week7_count + 0*Week8_count + 0*Week9_count + 0*Week10_count + 1*Week11_count + 1*Week12_count + 1*Week13_count + 1*Week14_count + 1*Week15_count + 1*Week16_count + 1*Week17_count + 1*Week18_count + 1*Week19_count + 1*Week20_count
+    s =~ 0*Week1_count + 0*Week2_count + 0*Week3_count + 0*Week4_count + 0*Week5_count + 0*Week6_count + 0*Week7_count + 0*Week8_count +0*Week9_count + 0*Week10_count + 0*Week11_count + 1*Week12_count + 2*Week13_count + 3*Week14_count + 4*Week15_count + 5*Week16_count + 6*Week17_count + 7*Week18_count + 8*Week19_count + 9*Week20_count
+  # regressions
+    i ~ Planfulnesscenter
+    wi ~ Planfulnesscenter
+    s ~ Planfulnesscenter
+'
+LGCM.fit = growth(LGCM, data = data, sample.nobs = nrow(data))
+summary(LGCM.fit, fit.measures=TRUE, standardized=TRUE)
+
+## Plot the model
+semPaths(LGCM.fit, style="LISREL")
+```
