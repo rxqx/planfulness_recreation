@@ -12,7 +12,7 @@ if(!require(ggplot2)) install.packages("ggplot2")
 if(!require(MASS)) install.packages("MASS")
 
 ##Import data
-data=read.csv("~/Documents/Research/Planfulness_REC/Data/scales_and_count_clean_planfulnessREC.csv")
+data=read.csv("~/scales_and_count_clean_planfulnessREC.csv")
 ```
 Run robust regression- iterative re-weighting least squares with Huber weights. Predict count of check-ins in winter term by Planfulness score.
 
