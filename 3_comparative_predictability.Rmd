@@ -1,0 +1,168 @@
+---
+title: "Comparing predictive ability"
+author: "Rita M Ludwig"
+date: "12/23/2018"
+output: html_document
+---
+A R script that includes all personality scale scores in the same model predicting count of check-ins, per ten-week term to test whether planfulness will explain variance in goal persistence over and above scores on Grit, the Brief Self-Control Scale, and the Extraversion and Conscientiousness facets of the BFI-2.
+```{r setup, include=FALSE}
+##Required packages to run the script
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(lavaan)) install.packages("lavaan")
+if(!require(semPlot)) install.packages("semPlot")
+
+##Import data
+data=read.csv("~/scaleitems_clean.csv")
+```
+Build parcels to include in the separability of constructs model using an item-to-construct balance approach.
+```{r build parcels}
+##PLANFULNESS##
+data$TOP1=(data$P_Q1TP+data$P_Q7TP+data$P_REVQ25TP)/3
+data$TOP1=round(data$TOP1, digits=2)
+data$TOP2=(data$P_REVQ3TP+data$P_Q23TP+data$P_REVQ30TP)/3
+data$TOP2=round(data$TOP2, digits=2)
+data$TOP3=(data$P_REVQ11TP+data$P_Q14TP+data$P_Q28TP+data$P_REVQ20TP)/4
+data$TOP3=round(data$TOP3, digits=2)
+
+data$CSP1=(data$P_REVQ21CS+data$P_Q26CS+data$P_REVQ12CS)/3
+data$CSP1=round(data$CSP1, digits=2)
+data$CSP2=(data$P_REVQ4CS+data$P_Q5CS+data$P_Q17CS)/3
+data$CSP2=round(data$CSP2, digits=2)
+data$CSP3=(data$P_Q8CS+data$P_REVQ18CS+data$P_Q15CS+data$P_REVQ2CS)/4
+data$CSP3=round(data$CSP3, digits=2)
+
+data$MFP1=(data$P_REVQ10MF+data$P_Q27MF+data$P_Q19MF)/3
+data$MFP1=round(data$MFP1, digits=2)
+data$MFP2=(data$P_REVQ22MF+data$P_Q27MF+data$P_REVQ29MF)/3
+data$MFP2=round(data$MFP2, digits=2)
+data$MFP3=(data$P_Q8CS+data$P_REVQ13MF+data$P_Q24MF+data$P_Q9MF)/4
+data$MFP3=round(data$MFP3, digits=2)
+
+##GRIT##
+data$GRITP1=(data$Gr8R+data$Gr9+data$Gr2R+data$Gr1)/4
+data$GRITP1=round(data$GRITP1, digits=2)
+data$GRITP2=(data$Gr5R+data$Gr7R+data$Gr12+data$Gr4)/4
+data$GRITP2=round(data$GRITP2, digits=2)
+data$GRITP3=(data$Gr3R+data$Gr10+data$Gr11R+data$Gr6)/4
+data$GRITP3=round(data$GRITP3, digits=2)
+
+##BSCS##
+data$BSCSP1=(data$BSCS7R+data$BSCS5R+data$BSCS1+data$BSCS11)/4
+data$BSCSP1=round(data$BSCSP1, digits=2)
+data$BSCSP2=(data$BSCS9R+data$BSCS12R+data$BSCS3R+data$BSCS4R)/4
+data$BSCSP2=round(data$BSCSP2, digits=2)
+data$BSCSP3=(data$BSCS8+data$BSCS10R+data$BSCS6+data$BSCS13R+data$BSCS2R)/5
+data$BSCSP3=round(data$BSCSP3, digits=2)
+
+##CONSCI##
+data$CONSCIP1=(data$BFI3_CR+data$BFI58_CR+data$BFI48_CR+data$BFI43_C)/4
+data$CONSCIP1=round(data$CONSCIP1, digits=2)
+data$CONSCIP2=(data$BFI23_CR+data$BFI28_CR+data$BFI18_C+data$BFI13_C)/4
+data$CONSCIP2=round(data$CONSCIP2, digits=2)
+data$CONSCIP3=(data$BFI33_C+data$BFI8_CR+data$BFI53_C+data$BFI38_C)/4
+data$CONSCIP3=round(data$CONSCIP3, digits=2)
+
+##EXTRA##
+data$EXTRAP1=(data$BFI16_ER+data$BFI46_E+data$BFI51_ER+data$BFI26_ER)/4
+data$EXTRAP1=round(data$CONSCIP1, digits=2)
+data$EXTRAP2=(data$BFI31_ER+data$BFI6_E+data$BFI56_E+data$BFI36_ER)/4
+data$EXTRAP2=round(data$CONSCIP2, digits=2)
+data$EXTRAP3=(data$BFI21_E+data$BFI1_E+data$BFI41_E+data$BFI11_ER)/4
+data$EXTRAP3=round(data$CONSCIP3, digits=2)
+```
+Run the fall models.
+```{r fall models}
+fallactivity=filter(data,!str_detect(term,"winter")) %>%
+  subset(., select= -c(term))
+
+#establish latent variables and indicators, build model
+FallExtraParcel='
+ # Latent variables
+  TO =~ TOP1+TOP2+TOP3
+  CS =~ CSP1+CSP2+CSP3
+  MF =~ MFP1+MFP2+MFP3
+  GRIT =~ GRITP1+GRITP2+GRITP3
+  BSCS =~ BSCSP1+BSCSP2+BSCSP3
+  EXTRA =~ EXTRAP1+EXTRAP2+EXTRAP3
+  P =~ MF+CS+TO
+  Count ~ P+BSCS+GRIT+EXTRA
+'
+fit.FallExtraParcel=cfa(FallExtraParcel, data=fallactivity, sample.nobs = nrow(fallactivity))
+# display summary output
+summary(fit.FallExtraParcel, fit.measures=TRUE, standardized=TRUE)
+#get standardized variances
+standardizedSolution(fit.FallExtraParcel)
+
+#get a visual of the path
+semPaths(fit.FallExtraParcel, what="est", layout="tree", title=TRUE, style="LISREL")
+
+### Now for Conscientiousness
+#establish latent variables and indicators, build model
+FallConsciParcel='
+ # Latent variables
+  TO =~ TOP1+TOP2+TOP3
+  CS =~ CSP1+CSP2+CSP3
+  MF =~ MFP1+MFP2+MFP3
+  GRIT =~ GRITP1+GRITP2+GRITP3
+  BSCS =~ BSCSP1+BSCSP2+BSCSP3
+  CONSCI =~ CONSCIP1+CONSCIP2+CONSCIP3
+  P =~ MF+CS+TO
+  Count ~ P+BSCS+GRIT+CONSCI
+'
+fit.FallConsciParcel=cfa(FallConsciParcel, data=fallactivity, sample.nobs = nrow(fallactivity))
+# display summary output
+summary(fit.FallConsciParcel, fit.measures=TRUE, standardized=TRUE)
+#get standardized variances
+standardizedSolution(fit.FallConsciParcel)
+
+#get a visual of the path
+semPaths(fit.FallConsciParcel, what="est", layout="tree", title=TRUE, style="LISREL")
+```
+Run the winter models.
+```{r winter models}
+winteractivity=filter(data,!str_detect(term,"fall")) %>%
+  subset(., select= -c(term))
+
+#establish latent variables and indicators, build model
+WinterExtraParcel='
+ # Latent variables
+  TO =~ TOP1+TOP2+TOP3
+  CS =~ CSP1+CSP2+CSP3
+  MF =~ MFP1+MFP2+MFP3
+  GRIT =~ GRITP1+GRITP2+GRITP3
+  BSCS =~ BSCSP1+BSCSP2+BSCSP3
+  EXTRA =~ EXTRAP1+EXTRAP2+EXTRAP3
+  P =~ MF+CS+TO
+  Count ~ P+EXTRA+BSCS+GRIT
+'
+fit.WinterExtraParcel=cfa(WinterExtraParcel, data=winteractivity, sample.nobs = nrow(fallactivity))
+# display summary output
+summary(fit.WinterExtraParcel, fit.measures=TRUE, standardized=TRUE)
+#get standardized variances
+standardizedSolution(fit.WinterExtraParcel)
+
+#get a visual of the path
+semPaths(fit.WinterExtraParcel, what="est", layout="tree", title=TRUE, style="LISREL")
+
+### Now for the consci model
+#establish latent variables and indicators, build model
+WinterConsciParcel='
+ # Latent variables
+  TO =~ TOP1+TOP2+TOP3
+  CS =~ CSP1+CSP2+CSP3
+  MF =~ MFP1+MFP2+MFP3
+  GRIT =~ GRITP1+GRITP2+GRITP3
+  BSCS =~ BSCSP1+BSCSP2+BSCSP3
+  CONSCI =~ CONSCIP1+CONSCIP2+CONSCIP3
+  P =~ MF+CS+TO
+  Count ~ P+CONSCI+BSCS+GRIT
+'
+fit.WinterConsciParcel=cfa(WinterConsciParcel, data=winteractivity, sample.nobs = nrow(fallactivity))
+# display summary output
+summary(fit.WinterConsciParcel, fit.measures=TRUE, standardized=TRUE)
+#get standardized variances
+standardizedSolution(fit.WinterConsciParcel)
+
+#get a visual of the path
+semPaths(fit.WinterConsciParcel, what="est", layout="tree", title=TRUE, style="LISREL")
+```
