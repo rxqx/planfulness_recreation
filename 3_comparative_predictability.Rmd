@@ -64,19 +64,19 @@ data$CONSCIP3=round(data$CONSCIP3, digits=2)
 
 ##EXTRA##
 data$EXTRAP1=(data$BFI16_ER+data$BFI46_E+data$BFI51_ER+data$BFI26_ER)/4
-data$EXTRAP1=round(data$CONSCIP1, digits=2)
+data$EXTRAP1=round(data$EXTRAP1, digits=2)
 data$EXTRAP2=(data$BFI31_ER+data$BFI6_E+data$BFI56_E+data$BFI36_ER)/4
-data$EXTRAP2=round(data$CONSCIP2, digits=2)
+data$EXTRAP2=round(data$EXTRAP2, digits=2)
 data$EXTRAP3=(data$BFI21_E+data$BFI1_E+data$BFI41_E+data$BFI11_ER)/4
-data$EXTRAP3=round(data$CONSCIP3, digits=2)
+data$EXTRAP3=round(data$EXTRAP3, digits=2)
 ```
-Run the fall models.
+Run the fall model.
 ```{r fall models}
 fallactivity=filter(data,!str_detect(term,"winter")) %>%
   subset(., select= -c(term))
 
 #establish latent variables and indicators, build model
-FallExtraParcel='
+FallParcel='
  # Latent variables
   TO =~ TOP1+TOP2+TOP3
   CS =~ CSP1+CSP2+CSP3
@@ -84,47 +84,26 @@ FallExtraParcel='
   GRIT =~ GRITP1+GRITP2+GRITP3
   BSCS =~ BSCSP1+BSCSP2+BSCSP3
   EXTRA =~ EXTRAP1+EXTRAP2+EXTRAP3
+  CONSCI =~ CONSCIP1+CONCSIP2+CONSCIP3
   P =~ MF+CS+TO
-  Count ~ P+BSCS+GRIT+EXTRA
+  Count ~ P+BSCS+GRIT+EXTRA+CONSCI
 '
-fit.FallExtraParcel=cfa(FallExtraParcel, data=fallactivity, sample.nobs = nrow(fallactivity))
+fit.FallParcel=cfa(FallParcel, data=fallactivity, sample.nobs = nrow(fallactivity))
 # display summary output
-summary(fit.FallExtraParcel, fit.measures=TRUE, standardized=TRUE)
+summary(fit.FallParcel, fit.measures=TRUE, standardized=TRUE)
 #get standardized variances
-standardizedSolution(fit.FallExtraParcel)
+standardizedSolution(fit.FallParcel)
 
 #get a visual of the path
-semPaths(fit.FallExtraParcel, what="est", layout="tree", title=TRUE, style="LISREL")
-
-### Now for Conscientiousness
-#establish latent variables and indicators, build model
-FallConsciParcel='
- # Latent variables
-  TO =~ TOP1+TOP2+TOP3
-  CS =~ CSP1+CSP2+CSP3
-  MF =~ MFP1+MFP2+MFP3
-  GRIT =~ GRITP1+GRITP2+GRITP3
-  BSCS =~ BSCSP1+BSCSP2+BSCSP3
-  CONSCI =~ CONSCIP1+CONSCIP2+CONSCIP3
-  P =~ MF+CS+TO
-  Count ~ P+BSCS+GRIT+CONSCI
-'
-fit.FallConsciParcel=cfa(FallConsciParcel, data=fallactivity, sample.nobs = nrow(fallactivity))
-# display summary output
-summary(fit.FallConsciParcel, fit.measures=TRUE, standardized=TRUE)
-#get standardized variances
-standardizedSolution(fit.FallConsciParcel)
-
-#get a visual of the path
-semPaths(fit.FallConsciParcel, what="est", layout="tree", title=TRUE, style="LISREL")
+semPaths(fit.FallParcel, what="est", layout="tree", title=TRUE, style="LISREL")
 ```
-Run the winter models.
+Run the winter model.
 ```{r winter models}
 winteractivity=filter(data,!str_detect(term,"fall")) %>%
   subset(., select= -c(term))
 
 #establish latent variables and indicators, build model
-WinterExtraParcel='
+WinterParcel='
  # Latent variables
   TO =~ TOP1+TOP2+TOP3
   CS =~ CSP1+CSP2+CSP3
@@ -132,37 +111,16 @@ WinterExtraParcel='
   GRIT =~ GRITP1+GRITP2+GRITP3
   BSCS =~ BSCSP1+BSCSP2+BSCSP3
   EXTRA =~ EXTRAP1+EXTRAP2+EXTRAP3
-  P =~ MF+CS+TO
-  Count ~ P+EXTRA+BSCS+GRIT
-'
-fit.WinterExtraParcel=cfa(WinterExtraParcel, data=winteractivity, sample.nobs = nrow(fallactivity))
-# display summary output
-summary(fit.WinterExtraParcel, fit.measures=TRUE, standardized=TRUE)
-#get standardized variances
-standardizedSolution(fit.WinterExtraParcel)
-
-#get a visual of the path
-semPaths(fit.WinterExtraParcel, what="est", layout="tree", title=TRUE, style="LISREL")
-
-### Now for the consci model
-#establish latent variables and indicators, build model
-WinterConsciParcel='
- # Latent variables
-  TO =~ TOP1+TOP2+TOP3
-  CS =~ CSP1+CSP2+CSP3
-  MF =~ MFP1+MFP2+MFP3
-  GRIT =~ GRITP1+GRITP2+GRITP3
-  BSCS =~ BSCSP1+BSCSP2+BSCSP3
   CONSCI =~ CONSCIP1+CONSCIP2+CONSCIP3
   P =~ MF+CS+TO
-  Count ~ P+CONSCI+BSCS+GRIT
+  Count ~ P+EXTRA+CONSCI+BSCS+GRIT
 '
-fit.WinterConsciParcel=cfa(WinterConsciParcel, data=winteractivity, sample.nobs = nrow(fallactivity))
+fit.WinterParcel=cfa(WinterParcel, data=winteractivity, sample.nobs = nrow(winteractivity))
 # display summary output
-summary(fit.WinterConsciParcel, fit.measures=TRUE, standardized=TRUE)
+summary(fit.WinterParcel, fit.measures=TRUE, standardized=TRUE)
 #get standardized variances
-standardizedSolution(fit.WinterConsciParcel)
+standardizedSolution(fit.WinterParcel)
 
 #get a visual of the path
-semPaths(fit.WinterConsciParcel, what="est", layout="tree", title=TRUE, style="LISREL")
+semPaths(fit.WinterParcel, what="est", layout="tree", title=TRUE, style="LISREL")
 ```
