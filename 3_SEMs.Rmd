@@ -1,5 +1,5 @@
 ---
-title: "Comparing predictive ability"
+title: "Structural equation models of all measured variables"
 author: "Rita M Ludwig"
 date: "12/23/2018"
 output: html_document
